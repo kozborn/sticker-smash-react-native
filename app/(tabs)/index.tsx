@@ -1,75 +1,103 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
+import { StyleSheet, ToastAndroid, View } from "react-native";
+import Button from "../../components/Button";
+import CircleButton from "../../components/CircleButton";
+import IconButton from "../../components/IconButton";
+import ImageViewer from "../../components/ImageViewer";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const PlaceholderImage = require("@/assets/images/background-image.png");
 
-export default function HomeScreen() {
+export default function Index() {
+  const [image, setImage] = useState<string | null>(null);
+  const [showAppOptions, setShowAppOptions] = useState(false);
+  const pickImageAsync = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      console.log(result);
+      setImage(result.assets[0].uri);
+    } else {
+      ToastAndroid?.show("You did not select any image.", ToastAndroid.SHORT);
+    }
+  };
+
+  const showToast = () => {
+    ToastAndroid?.show("A pikachu appeared nearby !", ToastAndroid.SHORT);
+  };
+
+  const showToastWithGravity = () => {
+    ToastAndroid?.show("A wild charmander appeared nearby !", ToastAndroid.SHORT);
+  };
+
+  const showToastWithGravityAndOffset = () => {
+    ToastAndroid?.show("A wild bulbasaur appeared nearby !", ToastAndroid.LONG);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View style={styles.imageContainer}>
+        <ImageViewer source={image ? image : PlaceholderImage} />
+        {showAppOptions ? (
+          <View style={styles.inlineButtonsContainer}>
+            <View>
+              <IconButton
+                onPress={() => {
+                  setImage(null);
+                  setShowAppOptions(false);
+                }}
+                label="Reset"
+                icon="refresh"
+              />
+            </View>
+            <CircleButton onPress={showToast} />
+            <View>
+              <IconButton onPress={showToastWithGravityAndOffset} label="Share" icon="share" />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.buttonsContainer}>
+            <Button theme="primary" title="Change Image" onPress={pickImageAsync} />
+            <Button title="Use this image" onPress={() => setShowAppOptions(true)} />
+            <Button title="Clear image" onPress={() => setImage(null)} />
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  whiteButton: {
+    color: "#fff",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  container: {
+    width: "100%",
+    flex: 1,
+    backgroundColor: "#25292e",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  text: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  imageContainer: {
+    alignItems: "center",
+    flex: 1,
+  },
+  buttonsContainer: {
+    alignItems: "center",
+  },
+  inlineButtonsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
   },
 });
