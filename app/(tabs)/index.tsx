@@ -1,16 +1,23 @@
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { StyleSheet, ToastAndroid, View } from "react-native";
+import { ImageSourcePropType, StyleSheet, ToastAndroid, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-reanimated/src/initializers"; // add this line at top
 import Button from "../../components/Button";
 import CircleButton from "../../components/CircleButton";
+import EmojiList from "../../components/EmojiList";
+import EmojiPicker from "../../components/EmojiPicker";
+import EmojiStickerWeb from "../../components/EmojiStickerWeb";
 import IconButton from "../../components/IconButton";
 import ImageViewer from "../../components/ImageViewer";
-
 const PlaceholderImage = require("@/assets/images/background-image.png");
 
+// Web does not support the native Reanimated logger configuration
 export default function Index() {
   const [image, setImage] = useState<string | null>(null);
   const [showAppOptions, setShowAppOptions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(null);
   const pickImageAsync = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -38,26 +45,33 @@ export default function Index() {
     ToastAndroid?.show("A wild bulbasaur appeared nearby !", ToastAndroid.LONG);
   };
 
+  const addSticker = () => {
+    setShowEmojiPicker(true);
+  };
+
+  const saveImageAsync = () => {
+    alert("Saving image");
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <ImageViewer source={image ? image : PlaceholderImage} />
+    <GestureHandlerRootView style={styles.imageContainer}>
+      <View style={styles.container}>
+        <View style={{ position: "relative" }}>
+          <ImageViewer source={image ? image : PlaceholderImage} />
+          {pickedEmoji ? <EmojiStickerWeb imageSize={40} stickerSource={pickedEmoji} /> : null}
+        </View>
         {showAppOptions ? (
-          <View style={styles.inlineButtonsContainer}>
-            <View>
-              <IconButton
-                onPress={() => {
-                  setImage(null);
-                  setShowAppOptions(false);
-                }}
-                label="Reset"
-                icon="refresh"
-              />
-            </View>
-            <CircleButton onPress={showToast} />
-            <View>
-              <IconButton onPress={showToastWithGravityAndOffset} label="Share" icon="share" />
-            </View>
+          <View style={styles.optionsContainer}>
+            <IconButton
+              onPress={() => {
+                setImage(null);
+                setShowAppOptions(false);
+              }}
+              label="Reset"
+              icon="refresh"
+            />
+            <CircleButton onPress={addSticker} />
+            <IconButton onPress={showToastWithGravityAndOffset} label="Share" icon="share" />
           </View>
         ) : (
           <View style={styles.buttonsContainer}>
@@ -66,8 +80,11 @@ export default function Index() {
             <Button title="Clear image" onPress={() => setImage(null)} />
           </View>
         )}
+        <EmojiPicker visible={showEmojiPicker} onClose={() => setShowEmojiPicker(false)}>
+          <EmojiList onCloseModal={() => setShowEmojiPicker(false)} onSelect={setPickedEmoji} />
+        </EmojiPicker>
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -91,6 +108,12 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: "center",
     flex: 1,
+    backgroundColor: "000",
+  },
+  optionsContainer: {
+    flexDirection: "row",
+    position: "absolute",
+    bottom: 80,
   },
   buttonsContainer: {
     alignItems: "center",
