@@ -1,8 +1,11 @@
+import domtoimage from "dom-to-image";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import { ImageSourcePropType, StyleSheet, ToastAndroid, View } from "react-native";
+import * as MediaLibrary from "expo-media-library";
+import { useEffect, useRef, useState } from "react";
+import { ImageSourcePropType, Platform, StyleSheet, ToastAndroid, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated/src/initializers"; // add this line at top
+import { captureRef } from "react-native-view-shot";
 import Button from "../../components/Button";
 import CircleButton from "../../components/CircleButton";
 import EmojiList from "../../components/EmojiList";
@@ -10,6 +13,7 @@ import EmojiPicker from "../../components/EmojiPicker";
 import EmojiStickerWeb from "../../components/EmojiStickerWeb";
 import IconButton from "../../components/IconButton";
 import ImageViewer from "../../components/ImageViewer";
+
 const PlaceholderImage = require("@/assets/images/background-image.png");
 
 // Web does not support the native Reanimated logger configuration
@@ -18,6 +22,14 @@ export default function Index() {
   const [showAppOptions, setShowAppOptions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(null);
+  const [mediaPermissions, requestMediaPermission] = MediaLibrary.usePermissions();
+  const imageRef = useRef<View>(null);
+  useEffect(() => {
+    if (!mediaPermissions?.granted) {
+      requestMediaPermission();
+    }
+  }, [mediaPermissions, requestMediaPermission]);
+
   const pickImageAsync = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -49,14 +61,44 @@ export default function Index() {
     setShowEmojiPicker(true);
   };
 
-  const saveImageAsync = () => {
-    alert("Saving image");
+  const saveImageAsync = async () => {
+    try {
+      if (Platform.OS !== "web") {
+        if (imageRef.current) {
+          const localUri = await captureRef(imageRef, {
+            height: 440,
+            quality: 1,
+          });
+
+          await MediaLibrary.saveToLibraryAsync(localUri);
+          if (mediaPermissions?.granted) {
+            ToastAndroid?.show("Saved to photo gallery!", ToastAndroid.SHORT);
+          } else {
+            requestMediaPermission();
+            if (mediaPermissions?.granted) {
+              ToastAndroid?.show("Saved to photo gallery!", ToastAndroid.SHORT);
+            }
+          }
+        }
+      } else {
+        const dataUrl = await domtoimage.toPng(imageRef.current!, { quality: 1 });
+        const link = document.createElement("a");
+        link.download = "sticker-smash.png";
+        link.href = dataUrl;
+        link.click();
+        link.remove();
+        ToastAndroid?.show("Saved to downloads!", ToastAndroid.SHORT);
+      }
+    } catch (e: Error | any) {
+      console.log(e);
+      ToastAndroid?.show(`Failed to save image! ${e.message}`, ToastAndroid.SHORT);
+    }
   };
 
   return (
     <GestureHandlerRootView style={styles.imageContainer}>
       <View style={styles.container}>
-        <View style={{ position: "relative" }}>
+        <View ref={imageRef} style={{ position: "relative" }} collapsable={false}>
           <ImageViewer source={image ? image : PlaceholderImage} />
           {pickedEmoji ? <EmojiStickerWeb imageSize={40} stickerSource={pickedEmoji} /> : null}
         </View>
@@ -66,12 +108,13 @@ export default function Index() {
               onPress={() => {
                 setImage(null);
                 setShowAppOptions(false);
+                setPickedEmoji(null);
               }}
               label="Reset"
               icon="refresh"
             />
             <CircleButton onPress={addSticker} />
-            <IconButton onPress={showToastWithGravityAndOffset} label="Share" icon="share" />
+            <IconButton onPress={() => saveImageAsync()} label="Save" icon="save" />
           </View>
         ) : (
           <View style={styles.buttonsContainer}>

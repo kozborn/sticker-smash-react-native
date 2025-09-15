@@ -1,4 +1,4 @@
-import { ImageSourcePropType, View } from "react-native";
+import { ImageSourcePropType, Platform, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import EmojiStickerWeb from "./EmojiStickerWeb";
@@ -9,7 +9,7 @@ type Props = {
 };
 
 const EmojiSticker =
-  Plaftorm.OS === "web"
+  Platform.OS === "web"
     ? EmojiStickerWeb
     : function EmojiSticker({ imageSize, stickerSource }: Props) {
         const scaleImage = useSharedValue(imageSize);
